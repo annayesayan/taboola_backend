@@ -1,0 +1,81 @@
+a.  CREATE TABLE product (
+	productName varchar(255),
+	category varchar(255),
+	createdDate datetime  DEFAULT CURRENT_TIMESTAMP(),
+	addedBy DEFAULT CURRENT_USER
+);
+
+b. CREATE TABLE product_price (
+	productName varchar(255),
+	price int,
+	discount int DEFAULT 0,
+	updatedDate datetime  DEFAULT CURRENT_TIMESTAMP(),
+	updatedBy DEFAULT CURRENT_USER
+);
+
+c. CREATE TABLE price_log (
+	productName varchar(255),
+	price int,
+	discount int DEFAULT 0,
+	operation varchar(20),
+	operationDate datetime  DEFAULT CURRENT_TIMESTAMP(),
+	performedBy DEFAULT CURRENT_USER
+);
+
+
+CREATE TRIGGER log
+ON product_price
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO price_log( 
+        productName,
+        price,
+        discount, 
+        operation,
+	operationDate,
+	performedBy
+    )
+    SELECT
+        i.productName,
+	price,
+        discount, 
+        'INSERTED',
+	operationDate,
+	performedBy
+    FROM
+        inserted i
+    UNION ALL
+    SELECT
+        u.productName,
+	price,
+        discount, 
+        'UPDATED',
+	operationDate,
+	performedBy
+    FROM
+        updated u;
+    SELECT
+        d.productName,
+	price,
+        discount, 
+        'DELETED',
+	operationDate,
+	performedBy
+    FROM
+        deleted d;
+END
+
+
+
+Query
+--------
+SELECT
+    product.productName,
+    product.category,
+    product_price.price,
+    product_price.updatedDate,
+    product_price.updatedBy
+FROM product
+JOIN product_price ON product.productName=product_price.productName;
